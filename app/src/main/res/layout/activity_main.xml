@@ -54,33 +54,33 @@
                     android:layout_centerInParent="true"
                     android:orientation="vertical">
                     <TextView
-                        android:id="@+id/names"
+                        android:id="@+id/txtStudentName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textSize="35sp"
                         android:textColor="@color/white"
                         android:layout_centerInParent="true"
-                        android:text="John Doe"/>
+                        android:text="..."/>
 
                     <TextView
-                        android:id="@+id/school"
+                        android:id="@+id/txtStudentSchool"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_centerHorizontal="true"
                         android:textSize="15sp"
                         android:textColor="@color/white"
                         android:layout_below="@+id/names"
-                        android:text="L.M Kganane Secondary School" />
+                        android:text="..." />
 
                     <TextView
-                        android:id="@+id/grade"
+                        android:id="@+id/txtStudentGrade"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_centerHorizontal="true"
-                        android:textSize="15sp"
+                        android:textSize="10sp"
                         android:textColor="@color/white"
                         android:layout_below="@+id/school"
-                        android:text="[Grade 8]" />
+                        android:text="..." />
                 </LinearLayout>
             </RelativeLayout>
 

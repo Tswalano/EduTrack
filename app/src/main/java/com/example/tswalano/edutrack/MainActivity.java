@@ -1,167 +1,146 @@
 package com.example.tswalano.edutrack;
 
-import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.ArrayAdapter;
-import android.widget.ListAdapter;
 import android.widget.ListView;
-import android.widget.ProgressBar;
-import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.example.tswalano.edutrack.model.DataModel;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String TAG = MainActivity.class.getSimpleName();
-    TextView txtName, txtGrade;
-    private ProgressDialog dialog;
-    private ListView listView;
+    //    List
+    ArrayList<DataModel> dataModels;
+    HashMap<String, String> studentInfo;
+    ListView listView;
+    TextView txtName, txtSchool, txtGrade;
+    private static StudentAdapter adapter;
+    private ProgressDialog pDialog;
 
-    //    URL
-    private static String url = "http://192.168.42.128:8080/api/student/1";
-    String name, surname;
-
-    ArrayList<HashMap<String, String>> subjectList;
-
-    List<String> subject_list;
+    //    JSON Var
+    private String TAG = MainActivity.class.getSimpleName();
+    String url = "http://192.168.42.140:8080/api/v1/students/1";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        subjectList = new ArrayList<>();
-
-
-        txtName = findViewById(R.id.names);
-        txtGrade = findViewById(R.id.grade);
+        txtName = findViewById(R.id.txtStudentName);
+        txtGrade = findViewById(R.id.txtStudentGrade);
+        txtSchool = findViewById(R.id.txtStudentSchool);
         listView = findViewById(R.id.listView);
 
-        new getStudent().execute();
+        dataModels = new ArrayList<>();
+        studentInfo = new HashMap<>();
+
+        new GetStudents().execute();
     }
 
-    class getStudent extends AsyncTask<Void, Void, Void> {
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            dialog = new ProgressDialog(MainActivity.this);
-            dialog.setMessage("Please Wait...");
-            dialog.setCancelable(false);
-            dialog.show();
-
-        }
+    private class GetStudents extends AsyncTask<Void, Void, Void>{
 
         @Override
         protected Void doInBackground(Void... voids) {
-
             HttpHandler handler = new HttpHandler();
-//            Make a request to url and getting response
-            String jsonString = handler.makeServiceCall(url);
-            Log.e(TAG, "Response from url: " + jsonString);
+//            Make a request to the url and get a response
+            String jsonStr = handler.makeServiceCall(url);
+            Log.e(TAG, "Response from URL: " + jsonStr);
 
-            if (jsonString != null) {
+            if (jsonStr != null){
                 try {
-//                    Getting through array node
-                    JSONObject jsonObject = new JSONObject(jsonString);
-                    name = jsonObject.getString("firstname");
-                    surname = jsonObject.getString("surname");
-//                    String mark = jsonObject.getString("mark");
+                    JSONObject jsonObject = new JSONObject(jsonStr);
 
-//                    Getting JSON array node
-                    JSONObject mark = jsonObject.getJSONObject("mark");
-                    String subject1 = mark.getJSONObject("subject").getString("subjectOne");
-                    String subject2 = mark.getJSONObject("subject").getString("subjectTwo");
-                    String subject3 = mark.getJSONObject("subject").getString("subjectThree");
-                    String subject4 = mark.getJSONObject("subject").getString("subjectFour");
-                    String subject5 = mark.getJSONObject("subject").getString("subjectFive");
-                    String subject6 = mark.getJSONObject("subject").getString("subjectSix");
+                    String name = jsonObject.getString("name");
+                    String surname = jsonObject.getString("surname");
 
-                    // Initialize an array of animals
-                    String[] mySubjects = new String[]{
-                            subject1,
-                            subject2,
-                            subject3,
-                            subject4,
-                            subject5,
-                            subject6,
-                    };
+//                    Getting the json Array node
+                    JSONArray school = jsonObject.getJSONArray("school");
+                    JSONObject schoolObject = school.getJSONObject(2);
 
-//                  Create a list from string array elements
-                    subject_list = new ArrayList<String>(Arrays.asList(mySubjects));
+                    String schoolName = schoolObject.getString("schoolName");
+                    int year = schoolObject.getInt("year");
+                    String grade = schoolObject.getString("grade");
 
-                } catch (final JSONException e) {
-                    Log.e(TAG, "Json parsing error: " + e.getMessage());
+                    JSONArray subjects = schoolObject.getJSONArray("subjects");
+                    for (int i = 0; i < subjects.length(); i++){
+                        JSONObject subjectObject = subjects.getJSONObject(i);
+
+                        String subject = subjectObject.getString("subject");
+                        String term = subjectObject.getString("term");
+                        Integer mark = subjectObject.getInt("mark");
+
+                        System.out.println("DATA " + i +" : " + subject);
+
+                        dataModels.add(new DataModel(subject, term, mark));
+                        studentInfo.put("name", name);
+                        studentInfo.put("surname", surname);
+                        studentInfo.put("schoolName", schoolName);
+                        studentInfo.put("grade", grade);
+                        studentInfo.put("year", Integer.toString(year));
+                    }
+
+                }catch (final JSONException e){
+                    Log.e(TAG, "JSON parse error: " + e.getMessage());
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            System.out.println();
                             Toast.makeText(getApplicationContext(),
-                                    "Json parsing error: " + e.getMessage(),
-                                    Toast.LENGTH_LONG).show();
+                                    "Something went wrong with the server",
+                                    Toast.LENGTH_SHORT).show();
                         }
                     });
-
                 }
-
-            } else {
-                Log.e(TAG, "Couldn't get json from server.");
+            }else{
+                Log.e(TAG, "Couldn't get JSON from server ");
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        dialog.dismiss();
                         Toast.makeText(getApplicationContext(),
-                                "Couldn't get json from server. Check LogCat for possible errors!",
-                                Toast.LENGTH_LONG).show();
+                                "Connection error, Please check your internet connection",
+                                Toast.LENGTH_SHORT).show();
                     }
                 });
             }
-
             return null;
         }
 
         @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-
-//            dismiss dialog
-            if(dialog.isShowing()){
-                dialog.dismiss();
-            }
-
-//            ListAdapter adapter = new SimpleAdapter(
-//                    MainActivity.this, subjectList,
-//                    R.layout.list_items, new String[]{"sub1", "mark"},
-//                    new int[]{R.id.sub, R.id.mark}
-//            );
-//
-//            listView.setAdapter(adapter);
-//            txtName.setText(name + " " + surname);
-
-            // Initialize an ArrayAdapter object from the list
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                    MainActivity.this,android.R.layout.simple_list_item_1,
-                    subject_list
-            );
-
-            // Populate the ListView widget with ArrayAdapter
-            listView.setAdapter(adapter);
-
-            Toast.makeText(MainActivity.this, "Results: " + name, Toast.LENGTH_SHORT).show();
+        protected void onPreExecute() {
+            super.onPreExecute();
+            // Showing progress dialog
+            pDialog = new ProgressDialog(MainActivity.this);
+            pDialog.setMessage("Please wait...");
+            pDialog.setCancelable(false);
+            pDialog.show();
         }
 
+        @Override
+        protected void onPostExecute(Void results) {
+            super.onPostExecute(results);
+
+            txtName.setText(studentInfo.get("name") + " " + studentInfo.get("surname"));
+            txtSchool.setText(studentInfo.get("schoolName"));
+            txtGrade.setText(studentInfo.get("grade") + " - " + studentInfo.get("year"));
+
+            adapter= new StudentAdapter(MainActivity.this, R.layout.list_items,  dataModels);
+            listView.setAdapter(adapter);
+
+            // Dismiss the progress dialog
+            if (pDialog.isShowing())
+                pDialog.dismiss();
+        }
     }
+
 }
